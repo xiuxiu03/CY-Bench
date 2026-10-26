@@ -1,0 +1,10 @@
+numpy>=1.26
+pandas>=2.2
+scikit-learn>=1.5
+PyYAML>=6.0
+matplotlib>=3.9
+seaborn>=0.13
+torch>=2.3
+openai>=1.40
+xgboost>=2.1
+pytest>=8.0
