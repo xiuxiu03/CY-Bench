@@ -12,7 +12,6 @@ weight_decay: 0.0001
 hidden_dim: 96
 num_heads: 4
 dropout: 0.15
-spatial_k: 6
 lag_min: 0.5
 lag_max: 3.0
 lag_warmup_epochs: 15

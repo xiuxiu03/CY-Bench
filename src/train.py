@@ -19,7 +19,7 @@ def seasonal_features(bundle):
 def inverse(bundle,x): return bundle.scalers["target"].inverse_transform(np.asarray(x).reshape(-1,1)).ravel()
 
 def main():
-    pa=argparse.ArgumentParser(); pa.add_argument("--config",default="configs/default.yaml"); pa.add_argument("--data-dir"); pa.add_argument("--experiment",required=True,choices=["xgboost","lstm","transformer","proposed","ablate_no_lag","ablate_no_spatial","ablate_no_llm"]); pa.add_argument("--use-llm",action="store_true")
+    pa=argparse.ArgumentParser(); pa.add_argument("--config",default="configs/default.yaml"); pa.add_argument("--data-dir"); pa.add_argument("--experiment",required=True,choices=["xgboost","lstm","transformer","proposed","ablate_no_lag","ablate_no_llm"]); pa.add_argument("--use-llm",action="store_true")
     a=pa.parse_args(); cfg=yaml.safe_load(Path(a.config).read_text());
     if a.data_dir: cfg["data_dir"]=a.data_dir
     seed_all(cfg["seed"]); out=Path(cfg["output_dir"]); out.mkdir(parents=True,exist_ok=True)
@@ -43,11 +43,11 @@ def main():
         def predict(mask,train=False):
             result=[]; model.train(train)
             for ix in year_batches(b,mask):
-                xx=torch.tensor(b.dynamic[ix],dtype=torch.float32,device=device); ss=torch.tensor(b.soil[ix],dtype=torch.float32,device=device); cc=torch.tensor(b.coords[ix],dtype=torch.float32,device=device)
+                xx=torch.tensor(b.dynamic[ix],dtype=torch.float32,device=device); ss=torch.tensor(b.soil[ix],dtype=torch.float32,device=device)
                 kk=None if knowledge is None else torch.tensor(knowledge[ix],dtype=torch.float32,device=device)
-                enable_lag=a.experiment!="ablate_no_lag"; enable_spatial=a.experiment!="ablate_no_spatial"
+                enable_lag=a.experiment!="ablate_no_lag"
                 with torch.set_grad_enabled(train):
-                    z=model(xx,ss,cc,kk,enable_lag,enable_spatial) if isinstance(model,ProposedModel) else model(xx,ss,cc,kk)
+                    z=model(xx,ss,kk,enable_lag) if isinstance(model,ProposedModel) else model(xx,ss,kk)
                     if train:
                         opt.zero_grad(); loss=loss_fn(z,torch.tensor(b.y[ix],dtype=torch.float32,device=device)); loss.backward(); torch.nn.utils.clip_grad_norm_(model.parameters(),1.0); opt.step()
                 result.extend(zip(ix,z.detach().cpu().numpy()))
