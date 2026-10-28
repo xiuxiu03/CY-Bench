@@ -41,9 +41,8 @@ def cached_knowledge_embeddings(bundle, cache_path: str, model: str | None = Non
     prompts=build_region_prompts(bundle,template_path)
     notes = []
     for adm in unique:
-        r = client.chat.completions.create(...)
+        r = client.chat.completions.create(model=chat_model,temperature=0,messages=[{"role": "user", "content": prompts[adm]}])
         notes.append(r.choices[0].message.content or "")
-        
     # ====== 修改开始 ======
     em_list = []
     batch_size = 10
