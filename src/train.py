@@ -32,13 +32,20 @@ def main():
         device=torch.device("cuda" if torch.cuda.is_available() else "cpu")
         knowledge=None
         if use_llm:
-            k=cached_knowledge_embeddings(b,cfg["llm_cache"]); knowledge=k[b.region_index]
+            k_matrix = cached_knowledge_embeddings(b, cfg["llm_cache"])
+            # 确保读进来的是 numpy 数组
+            if isinstance(k_matrix, list):
+                k_matrix = np.array(k_matrix)
+            # 安全提取对应的知识向量
+            knowledge = k_matrix[b.region_index]
+            
             # Scale embeddings on train only, avoiding test-region/year influence.
-            mu,sd=knowledge[b.train_mask].mean(0),knowledge[b.train_mask].std(0)+1e-6; knowledge=(knowledge-mu)/sd
+            mu, sd = knowledge[b.train_mask].mean(0), knowledge[b.train_mask].std(0) + 1e-6
+            knowledge = (knowledge - mu) / sd
         weather=[i for i,n in enumerate(b.feature_names) if n.startswith(("meteo_","moisture_"))]; remote=[i for i,n in enumerate(b.feature_names) if n.startswith(("ndvi_","fpar_"))]
         if a.experiment=="lstm": model=LSTMRegressor(b.dynamic.shape[-1],b.soil.shape[-1],cfg["hidden_dim"],cfg["dropout"])
         elif a.experiment=="transformer": model=TransformerRegressor(b.dynamic.shape[-1],b.soil.shape[-1],cfg["hidden_dim"],cfg["num_heads"],cfg["dropout"])
-        else: model=ProposedModel(b.dynamic.shape[-1],b.soil.shape[-1],weather,remote,0 if knowledge is None else knowledge.shape[1],cfg["hidden_dim"],cfg["num_heads"],cfg["dropout"],cfg["lag_min"],cfg["lag_max"])
+        else: model=ProposedModel(b.dynamic.shape[-1],b.soil.shape[-1],weather,remote,0 if knowledge is None else knowledge.shape[1],cfg["llm_dim"],cfg["num_heads"],cfg["dropout"],cfg["lag_min"],cfg["lag_max"])
         model.to(device); opt=torch.optim.AdamW(model.parameters(),lr=cfg["learning_rate"],weight_decay=cfg["weight_decay"]); loss_fn=torch.nn.MSELoss(); best=(float("inf"),None); wait=0
         def predict(mask,train=False):
             result=[]; model.train(train)
