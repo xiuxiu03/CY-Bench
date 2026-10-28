@@ -39,7 +39,7 @@ def cached_knowledge_embeddings(bundle, cache_path: str, model: str | None = Non
     client=OpenAI(api_key=key, base_url=os.getenv("OPENAI_BASE_URL") or None)
     chat_model=model or os.getenv("LLM_MODEL","gpt-4.1-mini")
     prompts=build_region_prompts(bundle,template_path)
-        notes = []
+    notes = []
     for adm in unique:
         r = client.chat.completions.create(...)
         notes.append(r.choices[0].message.content or "")
