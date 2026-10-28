@@ -39,13 +39,12 @@ def cached_knowledge_embeddings(bundle, cache_path: str, model: str | None = Non
     client=OpenAI(api_key=key, base_url=os.getenv("OPENAI_BASE_URL") or None)
     chat_model=model or os.getenv("LLM_MODEL","gpt-4.1-mini")
     prompts=build_region_prompts(bundle,template_path)
-    notes=[]
+        notes = []
     for adm in unique:
-        r=client.chat.completions.create(model=chat_model, temperature=0, messages=[{"role":"user","content":prompts[adm]}])
+        r = client.chat.completions.create(...)
         notes.append(r.choices[0].message.content or "")
-    # Replace with an embedding endpoint available at your institution if text-embedding-3-small is unavailable.
-    # er=client.embeddings.create(model=os.getenv("EMBEDDING_MODEL","text-embedding-3-small"), input=notes)
-    # 修改为分批请求（每批最多 10 条）
+        
+    # ====== 修改开始 ======
     em_list = []
     batch_size = 10
     for i in range(0, len(notes), batch_size):
@@ -54,12 +53,13 @@ def cached_knowledge_embeddings(bundle, cache_path: str, model: str | None = Non
             model=os.getenv("EMBEDDING_MODEL", "text-embedding-v3"), 
             input=batch_notes
         )
-        # 提取每一批的 embedding
+        # 把每一批的结果转成 numpy 数组存起来
         batch_em = np.asarray([x.embedding for x in er.data], dtype=np.float32)
         em_list.append(batch_em)
     
-    # 把所有批次的结果拼接起来
+    # 把所有批次堆叠拼接成一个完整的矩阵 (31, 1024)
     em = np.concatenate(em_list, axis=0)
-    em=np.asarray([x.embedding for x in er.data],dtype=np.float32)
-    np.savez_compressed(cache,regions=np.asarray(unique),embeddings=em,notes=np.asarray(notes))
+    # ====== 修改结束 ======
+
+    np.savez_compressed(cache, regions=np.asarray(unique), embeddings=em, notes=np.asarray(notes))
     return em
