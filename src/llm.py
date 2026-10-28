@@ -44,7 +44,22 @@ def cached_knowledge_embeddings(bundle, cache_path: str, model: str | None = Non
         r=client.chat.completions.create(model=chat_model, temperature=0, messages=[{"role":"user","content":prompts[adm]}])
         notes.append(r.choices[0].message.content or "")
     # Replace with an embedding endpoint available at your institution if text-embedding-3-small is unavailable.
-    er=client.embeddings.create(model=os.getenv("EMBEDDING_MODEL","text-embedding-3-small"), input=notes)
+    # er=client.embeddings.create(model=os.getenv("EMBEDDING_MODEL","text-embedding-3-small"), input=notes)
+    # 修改为分批请求（每批最多 10 条）
+    em_list = []
+    batch_size = 10
+    for i in range(0, len(notes), batch_size):
+        batch_notes = notes[i:i+batch_size]
+        er = client.embeddings.create(
+            model=os.getenv("EMBEDDING_MODEL", "text-embedding-v3"), 
+            input=batch_notes
+        )
+        # 提取每一批的 embedding
+        batch_em = np.asarray([x.embedding for x in er.data], dtype=np.float32)
+        em_list.append(batch_em)
+    
+    # 把所有批次的结果拼接起来
+    em = np.concatenate(em_list, axis=0)
     em=np.asarray([x.embedding for x in er.data],dtype=np.float32)
     np.savez_compressed(cache,regions=np.asarray(unique),embeddings=em,notes=np.asarray(notes))
     return em
