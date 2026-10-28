@@ -18,3 +18,4 @@ lag_warmup_epochs: 15
 num_workers: 0
 use_llm: false
 llm_cache: artifacts/llm_embeddings.npz
+llm_dim: 1024 
